@@ -1,26 +1,58 @@
-package com.advanceenterprise.attendance;
+package com.advance.attendance;
 
-import android.app.*;
-import android.content.*;
-import android.os.*;
-import android.location.*;
-import android.content.pm.ServiceInfo;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.Service;
+import android.content.Intent;
+import android.os.Build;
+import android.os.IBinder;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 public class LocationService extends Service {
-    @Override public void onCreate(){
+
+    private static final String CHANNEL_ID = "attendance_location_channel";
+    private static final int NOTIFICATION_ID = 1001;
+
+    @Override
+    public void onCreate() {
         super.onCreate();
-        String ch="attendance_location";
-        if(Build.VERSION.SDK_INT>=26){
-            NotificationChannel nc=new NotificationChannel(ch,"Attendance Location",NotificationManager.IMPORTANCE_LOW);
-            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(nc);
-        }
-        Notification n=new Notification.Builder(this, ch)
-            .setContentTitle("Advance Enterprise Attendance")
-            .setContentText("Live location tracking is active")
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation).build();
-        if(Build.VERSION.SDK_INT>=29) startForeground(7,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        else startForeground(7,n);
+        createNotificationChannel();
     }
-    @Override public int onStartCommand(Intent i,int f,int s){ return START_STICKY; }
-    @Override public android.os.IBinder onBind(Intent i){ return null; }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Attendance tracking active")
+                .setContentText("Tracking duty-point location for attendance")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .build();
+
+        startForeground(NOTIFICATION_ID, notification);
+
+        // Production implementation should hook into FusedLocationProviderClient
+        // here and validate against the duty-point geofence.
+
+        return START_STICKY;
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Attendance Location Tracking",
+                    NotificationManager.IMPORTANCE_LOW);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 }
