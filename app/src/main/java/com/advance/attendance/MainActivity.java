@@ -32,8 +32,8 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     // Duty point: Shalinitai Meghe Hospital & Research Centre, Wanadongri, Hingna, Nagpur
-    private static final double DUTY_POINT_LAT = 21.0943;
-    private static final double DUTY_POINT_LNG = 78.97464;
+    private static final double DUTY_POINT_LAT = 21.0926149;
+    private static final double DUTY_POINT_LNG = 78.9714733;
     private static final float GEOFENCE_RADIUS_METERS = 50f;
     private static final int GRACE_PERIOD_MINUTES = 15;
     private static final String PREFS_NAME = "attendance_records";
