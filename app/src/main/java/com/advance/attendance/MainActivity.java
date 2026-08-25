@@ -3,11 +3,10 @@ package com.advance.attendance;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -18,6 +17,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -26,17 +28,21 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int PERMISSION_REQUEST_CODE = 100;
+    // Duty point: Shalinitai Meghe Hospital & Research Centre, Wanadongri, Hingna, Nagpur
+    private static final double DUTY_POINT_LAT = 21.0943;
+    private static final double DUTY_POINT_LNG = 78.97464;
+    private static final float GEOFENCE_RADIUS_METERS = 50f;
+
     private TextView statusText;
     private ImageView punchPhoto;
     private Uri photoUri;
+    private FusedLocationProviderClient fusedLocationClient;
 
     private final ActivityResultLauncher<Uri> takePictureLauncher =
             registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
                 if (success && photoUri != null) {
                     punchPhoto.setImageURI(photoUri);
-                    statusText.setText("Punch recorded. Location service started.");
-                    startLocationService();
+                    checkLocationAndConfirmPunch();
                 } else {
                     statusText.setText("Photo capture cancelled.");
                 }
@@ -61,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
         statusText = findViewById(R.id.statusText);
         punchPhoto = findViewById(R.id.punchPhoto);
         Button punchButton = findViewById(R.id.punchButton);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         punchButton.setOnClickListener(v -> handlePunch());
     }
@@ -102,6 +110,44 @@ public class MainActivity extends AppCompatActivity {
         String fileName = "PUNCH_" + timeStamp;
         File storageDir = getExternalFilesDir("Pictures");
         return File.createTempFile(fileName, ".jpg", storageDir);
+    }
+
+    private void checkLocationAndConfirmPunch() {
+        statusText.setText("Checking location...");
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            statusText.setText("Location permission missing.");
+            return;
+        }
+
+        fusedLocationClient.getCurrentLocation(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(location -> {
+                    if (location == null) {
+                        statusText.setText("Could not get location. Enable GPS and try again.");
+                        return;
+                    }
+
+                    float[] results = new float[1];
+                    Location.distanceBetween(
+                            location.getLatitude(), location.getLongitude(),
+                            DUTY_POINT_LAT, DUTY_POINT_LNG,
+                            results);
+                    float distanceMeters = results[0];
+
+                    if (distanceMeters <= GEOFENCE_RADIUS_METERS) {
+                        statusText.setText(String.format(Locale.getDefault(),
+                                "Punch recorded at duty point (%.0fm away). Location service started.",
+                                distanceMeters));
+                        startLocationService();
+                    } else {
+                        statusText.setText(String.format(Locale.getDefault(),
+                                "Punch rejected: you are %.0fm away from the duty point (limit %.0fm).",
+                                distanceMeters, GEOFENCE_RADIUS_METERS));
+                    }
+                })
+                .addOnFailureListener(e -> statusText.setText("Location error: " + e.getMessage()));
     }
 
     private void startLocationService() {
