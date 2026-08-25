@@ -1,4 +1,4 @@
-package com.advance.attendance;
+        package com.advance.attendance;
 
 import android.Manifest;
 import android.content.Context;
@@ -31,7 +31,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Duty point: Shalinitai Meghe Hospital & Research Centre, Wanadongri, Hingna, Nagpur
+    // Duty point: current registered location, Wanadongri, Nagpur
     private static final double DUTY_POINT_LAT = 21.0926149;
     private static final double DUTY_POINT_LNG = 78.9714733;
     private static final float GEOFENCE_RADIUS_METERS = 50f;
@@ -72,10 +72,12 @@ public class MainActivity extends AppCompatActivity {
         statusText = findViewById(R.id.statusText);
         punchPhoto = findViewById(R.id.punchPhoto);
         Button punchButton = findViewById(R.id.punchButton);
+        Button historyButton = findViewById(R.id.historyButton);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         punchButton.setOnClickListener(v -> handlePunch());
+        historyButton.setOnClickListener(v -> startActivity(new Intent(this, HistoryActivity.class)));
 
         showLastRecord();
     }
@@ -144,21 +146,22 @@ public class MainActivity extends AppCompatActivity {
                     float distanceMeters = results[0];
 
                     ShiftInfo shiftInfo = detectShiftAndPunctuality();
+                    String payrollPeriod = detectPayrollPeriod();
                     String timestamp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(new Date());
 
                     if (distanceMeters <= GEOFENCE_RADIUS_METERS) {
                         String message = String.format(Locale.getDefault(),
-                                "Punch recorded at duty point (%.0fm away).\n%s | %s",
-                                distanceMeters, shiftInfo.shiftLabel, shiftInfo.punctualityLabel);
+                                "Punch recorded at duty point (%.0fm away).\n%s | %s\nPayroll period: %s",
+                                distanceMeters, shiftInfo.shiftLabel, shiftInfo.punctualityLabel, payrollPeriod);
                         statusText.setText(message);
-                        saveRecord(timestamp, shiftInfo, "VALID", distanceMeters);
+                        saveRecord(timestamp, shiftInfo, "VALID", distanceMeters, payrollPeriod);
                         startLocationService();
                     } else {
                         String message = String.format(Locale.getDefault(),
                                 "Punch rejected: you are %.0fm away from the duty point (limit %.0fm).",
                                 distanceMeters, GEOFENCE_RADIUS_METERS);
                         statusText.setText(message);
-                        saveRecord(timestamp, shiftInfo, "REJECTED_LOCATION", distanceMeters);
+                        saveRecord(timestamp, shiftInfo, "REJECTED_LOCATION", distanceMeters, payrollPeriod);
                     }
                 })
                 .addOnFailureListener(e -> statusText.setText("Location error: " + e.getMessage()));
@@ -206,12 +209,34 @@ public class MainActivity extends AppCompatActivity {
         return info;
     }
 
-    private void saveRecord(String timestamp, ShiftInfo shiftInfo, String status, float distanceMeters) {
+    private String detectPayrollPeriod() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        int month = calendar.get(Calendar.MONTH);
+        int year = calendar.get(Calendar.YEAR);
+
+        Calendar startCal = Calendar.getInstance();
+        Calendar endCal = Calendar.getInstance();
+
+        if (day >= 21) {
+            startCal.set(year, month, 21);
+            endCal.set(year, month + 1, 20);
+        } else {
+            startCal.set(year, month - 1, 21);
+            endCal.set(year, month, 20);
+        }
+
+        SimpleDateFormat fmt = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault());
+        return fmt.format(startCal.getTime()) + " to " + fmt.format(endCal.getTime());
+    }
+
+    private void saveRecord(String timestamp, ShiftInfo shiftInfo, String status, float distanceMeters, String payrollPeriod) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         int count = prefs.getInt("record_count", 0);
 
         String record = timestamp + " | " + shiftInfo.shiftLabel + " | " + shiftInfo.punctualityLabel +
-                " | " + status + String.format(Locale.getDefault(), " | %.0fm", distanceMeters);
+                " | " + status + String.format(Locale.getDefault(), " | %.0fm", distanceMeters) +
+                " | Payroll: " + payrollPeriod;
 
         prefs.edit()
                 .putString("record_" + count, record)
