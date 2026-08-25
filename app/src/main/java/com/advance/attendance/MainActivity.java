@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private static final double DUTY_POINT_LAT = 21.0943;
     private static final double DUTY_POINT_LNG = 78.97464;
     private static final float GEOFENCE_RADIUS_METERS = 50f;
+    private static final int GRACE_PERIOD_MINUTES = 15;
     private static final String PREFS_NAME = "attendance_records";
 
     private TextView statusText;
@@ -142,45 +143,75 @@ public class MainActivity extends AppCompatActivity {
                             results);
                     float distanceMeters = results[0];
 
-                    String shift = detectShift();
+                    ShiftInfo shiftInfo = detectShiftAndPunctuality();
                     String timestamp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(new Date());
 
                     if (distanceMeters <= GEOFENCE_RADIUS_METERS) {
                         String message = String.format(Locale.getDefault(),
-                                "Punch recorded at duty point (%.0fm away), %s.", distanceMeters, shift);
+                                "Punch recorded at duty point (%.0fm away).\n%s | %s",
+                                distanceMeters, shiftInfo.shiftLabel, shiftInfo.punctualityLabel);
                         statusText.setText(message);
-                        saveRecord(timestamp, shift, "VALID", distanceMeters);
+                        saveRecord(timestamp, shiftInfo, "VALID", distanceMeters);
                         startLocationService();
                     } else {
                         String message = String.format(Locale.getDefault(),
                                 "Punch rejected: you are %.0fm away from the duty point (limit %.0fm).",
                                 distanceMeters, GEOFENCE_RADIUS_METERS);
                         statusText.setText(message);
-                        saveRecord(timestamp, shift, "REJECTED_LOCATION", distanceMeters);
+                        saveRecord(timestamp, shiftInfo, "REJECTED_LOCATION", distanceMeters);
                     }
                 })
                 .addOnFailureListener(e -> statusText.setText("Location error: " + e.getMessage()));
     }
 
-    private String detectShift() {
-        Calendar calendar = Calendar.getInstance();
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-
-        if (hour >= 7 && hour < 15) {
-            return "Shift 1 (07:00-15:00)";
-        } else if (hour >= 15 && hour < 23) {
-            return "Shift 2 (15:00-23:00)";
-        } else {
-            return "Shift 3 (23:00-07:00)";
-        }
+    private static class ShiftInfo {
+        String shiftLabel;
+        String punctualityLabel;
     }
 
-    private void saveRecord(String timestamp, String shift, String status, float distanceMeters) {
+    private ShiftInfo detectShiftAndPunctuality() {
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+        int minutesNow = hour * 60 + minute;
+
+        int shiftStartMinutes;
+        String shiftName;
+
+        if (hour >= 7 && hour < 15) {
+            shiftName = "Shift 1 (07:00-15:00)";
+            shiftStartMinutes = 7 * 60;
+        } else if (hour >= 15 && hour < 23) {
+            shiftName = "Shift 2 (15:00-23:00)";
+            shiftStartMinutes = 15 * 60;
+        } else {
+            shiftName = "Shift 3 (23:00-07:00)";
+            shiftStartMinutes = 23 * 60;
+            if (hour < 7) {
+                minutesNow += 24 * 60;
+            }
+        }
+
+        int lateMinutes = minutesNow - shiftStartMinutes;
+
+        ShiftInfo info = new ShiftInfo();
+        info.shiftLabel = shiftName;
+
+        if (lateMinutes <= GRACE_PERIOD_MINUTES) {
+            info.punctualityLabel = "ON TIME";
+        } else {
+            info.punctualityLabel = "LATE by " + (lateMinutes - GRACE_PERIOD_MINUTES) + " min (grace " + GRACE_PERIOD_MINUTES + " min used)";
+        }
+
+        return info;
+    }
+
+    private void saveRecord(String timestamp, ShiftInfo shiftInfo, String status, float distanceMeters) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         int count = prefs.getInt("record_count", 0);
 
-        String record = timestamp + " | " + shift + " | " + status +
-                String.format(Locale.getDefault(), " | %.0fm", distanceMeters);
+        String record = timestamp + " | " + shiftInfo.shiftLabel + " | " + shiftInfo.punctualityLabel +
+                " | " + status + String.format(Locale.getDefault(), " | %.0fm", distanceMeters);
 
         prefs.edit()
                 .putString("record_" + count, record)
