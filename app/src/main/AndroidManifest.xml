@@ -23,6 +23,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:label="Attendance History" />
+
         <service
             android:name=".LocationService"
             android:foregroundServiceType="location"
