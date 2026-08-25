@@ -1,0 +1,65 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout
+        android:orientation="vertical" android:padding="18dp"
+        android:layout_width="match_parent" android:layout_height="wrap_content">
+
+        <TextView android:id="@+id/title" android:text="Advance Enterprise"
+            android:textSize="26sp" android:textStyle="bold"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:text="Attendance Management • Android"
+            android:textSize="14sp" android:layout_marginBottom="18dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:id="@+id/cycle" android:text="Payroll Cycle: 21st–20th"
+            android:textSize="17sp" android:textStyle="bold"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:id="@+id/dateText" android:layout_marginTop="6dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:text="Select Shift" android:textStyle="bold"
+            android:layout_marginTop="18dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Spinner android:id="@+id/shiftSpinner"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <Button android:id="@+id/cameraBtn" android:text="📷 Face Punch / Camera"
+            android:layout_marginTop="14dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/punchInBtn" android:text="PUNCH IN"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/punchOutBtn" android:text="PUNCH OUT"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:id="@+id/status" android:text="Status: Not punched"
+            android:textSize="18sp" android:textStyle="bold"
+            android:layout_marginTop="16dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:id="@+id/times" android:layout_marginTop="6dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:text="Duty Point / Geofence" android:textStyle="bold"
+            android:layout_marginTop="18dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:id="@+id/locationText"
+            android:text="Location permission not checked yet."
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <Button android:id="@+id/locationBtn" android:text="📍 Get Current Location"
+            android:layout_marginTop="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <Button android:id="@+id/liveBtn" android:text="▶ Start Live Location Tracking"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:text="Attendance Rules" android:textStyle="bold"
+            android:textSize="18sp" android:layout_marginTop="20dp"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+        <TextView android:text="• 15-minute grace period; after that Late Mark.
+• Full Present: 8+ working hours.
+• Half-Day: 4 to under 8 hours.
+• Absent: under 4 hours.
+• Monthly penalty rule: maximum 3 Late Marks; 4th late onward penalty can be applied as configured.
+• Shift 3 crosses midnight (23:00–07:00 next day).
+• Duty point geofence is intended for approximately 50 metres."
+            android:layout_marginTop="6dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+        <TextView android:text="Important: Real face liveness/anti-spoofing and production GPS geofencing require a backend/ML service and must be tested with the employer's approved duty-point coordinates."
+            android:layout_marginTop="18dp" android:textStyle="italic"
+            android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    </LinearLayout>
+</ScrollView>

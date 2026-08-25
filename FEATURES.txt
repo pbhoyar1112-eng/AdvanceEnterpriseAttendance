@@ -1,0 +1,17 @@
+ADVANCE ENTERPRISE ATTENDANCE
+Based on supplied PRD image.
+
+Core:
+- 21st to 20th payroll cycle
+- 3 shifts, including night cross-over
+- Face punch/camera entry
+- Punch In / Punch Out
+- GPS location on punch
+- Duty point geofence target ~50 m
+- Live location foreground-service starter
+- Present / Half-Day / Absent
+- 15-minute grace / Late Mark
+- Penalty logic placeholder
+- Backend/ML integration points documented
+
+Note: This is a functional starter Android project. Production face anti-spoofing, backend, secure authentication, exact geofence coordinates and payroll cron require final configuration and testing.
